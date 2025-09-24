@@ -113,3 +113,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+backend/spring/src/main/resources/firebase-service-account.json
