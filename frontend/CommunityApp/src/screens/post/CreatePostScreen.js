@@ -1,3 +1,4 @@
+// screens/CreatePostScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -39,17 +40,14 @@ const CreatePostScreen = ({ navigation }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
     if (!formData.title.trim()) {
       newErrors.title = '제목을 입력해주세요';
     } else if (formData.title.length > 200) {
       newErrors.title = '제목은 200자 이하로 입력해주세요';
     }
-    
     if (!formData.content.trim()) {
       newErrors.content = '내용을 입력해주세요';
     }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -63,8 +61,11 @@ const CreatePostScreen = ({ navigation }) => {
     };
 
     launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error) return;
-      
+      if (response.didCancel) return;
+      if (response.errorCode) {
+        console.error('ImagePicker Error:', response.errorMessage);
+        return;
+      }
       if (response.assets && response.assets[0]) {
         setSelectedImage(response.assets[0]);
       }
@@ -78,34 +79,31 @@ const CreatePostScreen = ({ navigation }) => {
 
   const uploadImage = async () => {
     if (!selectedImage) return '';
-    
     try {
       const imageUrl = await uploadImageToFirebase(selectedImage);
       return imageUrl;
     } catch (error) {
-      console.error('Image upload error:', error);
       throw new Error('이미지 업로드에 실패했습니다');
     }
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    
     setLoading(true);
+
     try {
       let imageUrl = '';
-      
       if (selectedImage) {
         imageUrl = await uploadImage();
       }
-      
+
       const postData = {
         ...formData,
         imageUrl,
       };
-      
+
       const response = await ApiService.createPost(postData);
-      
+
       if (response.success) {
         Toast.show({
           type: 'success',
@@ -137,7 +135,7 @@ const CreatePostScreen = ({ navigation }) => {
               error={errors.title}
               placeholder="게시글 제목을 입력하세요"
             />
-            
+
             <Input
               label="내용"
               value={formData.content}
@@ -147,11 +145,10 @@ const CreatePostScreen = ({ navigation }) => {
               multiline
               style={styles.contentInput}
             />
-            
-            {/* Image Section */}
+
+            {/* 이미지 섹션 */}
             <View style={styles.imageSection}>
               <Text style={styles.imageLabel}>이미지 첨부</Text>
-              
               {selectedImage ? (
                 <View style={styles.selectedImageContainer}>
                   <Image source={{ uri: selectedImage.uri }} style={styles.selectedImage} />
@@ -166,7 +163,7 @@ const CreatePostScreen = ({ navigation }) => {
                 </TouchableOpacity>
               )}
             </View>
-            
+
             <View style={styles.buttonContainer}>
               <Button
                 title="게시글 작성"
@@ -174,7 +171,6 @@ const CreatePostScreen = ({ navigation }) => {
                 loading={loading}
                 style={styles.submitButton}
               />
-              
               <Button
                 title="취소"
                 onPress={() => navigation.goBack()}
@@ -190,40 +186,15 @@ const CreatePostScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  contentInput: {
-    marginBottom: 24,
-  },
-  imageSection: {
-    marginBottom: 24,
-  },
-  imageLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  selectedImageContainer: {
-    position: 'relative',
-  },
-  selectedImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  keyboardView: { flex: 1 },
+  scrollView: { flex: 1 },
+  content: { padding: 16 },
+  contentInput: { marginBottom: 24 },
+  imageSection: { marginBottom: 24 },
+  imageLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 8 },
+  selectedImageContainer: { position: 'relative' },
+  selectedImage: { width: '100%', height: 200, borderRadius: 8, backgroundColor: '#f0f0f0' },
   removeImageButton: {
     position: 'absolute',
     top: 8,
@@ -244,20 +215,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imageSelectorText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
-  },
-  buttonContainer: {
-    marginTop: 16,
-  },
-  submitButton: {
-    marginBottom: 12,
-  },
-  cancelButton: {
-    marginBottom: 12,
-  },
+  imageSelectorText: { fontSize: 14, color: '#666', marginTop: 8 },
+  buttonContainer: { marginTop: 16 },
+  submitButton: { marginBottom: 12 },
+  cancelButton: { marginBottom: 12 },
 });
 
 export default CreatePostScreen;

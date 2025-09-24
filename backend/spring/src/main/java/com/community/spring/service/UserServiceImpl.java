@@ -10,6 +10,7 @@ import com.community.spring.dto.RegisterRequest;
 import com.community.spring.mapper.UserMapper;
 import com.community.spring.util.JwtUtil;
 
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -48,6 +49,7 @@ public class UserServiceImpl implements UserService {
     public String login(LoginRequest request) throws Exception {
         User user = userMapper.findByUsername(request.getUsername());
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            // throw new RuntimeException("로그인 실패: " + request.getUsername() + ", " + request.getPassword());
             throw new RuntimeException("잘못된 사용자명 또는 비밀번호입니다.");
         }
         
@@ -79,5 +81,30 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(Long id) throws Exception {
         userMapper.deleteUser(id);
+    }
+
+    @Override
+    public long countPostsByUserId(Long userId) {
+        return userMapper.countPostsByUserId(userId);
+    }
+
+    @Override
+    public long countCommentsByUserId(Long userId) {
+        return userMapper.countCommentsByUserId(userId);
+    }
+
+    @Override
+    public void updateProfileImage(String username, String profileImageUrl) {
+        userMapper.updateProfileImage(username, profileImageUrl);
+    }
+
+    @Override
+    public java.util.List<com.community.spring.domain.Post> findPostsByUserId(Long userId) {
+        return userMapper.findPostsByUserId(userId);
+    }
+
+    @Override
+    public java.util.List<com.community.spring.domain.Comment> findCommentsByUserId(Long userId) {
+        return userMapper.findCommentsByUserId(userId);
     }
 }

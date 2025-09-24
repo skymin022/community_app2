@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,39 +13,37 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 
 import com.community.spring.domain.Comment;
 import com.community.spring.dto.CommentRequest;
 import com.community.spring.service.CommentService;
-import com.community.spring.util.JwtUtil;
+import com.community.spring.util.JwtAuthenticationFilter.CustomUserPrincipal;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class CommentController {
     
     private final CommentService commentService;
-    private final JwtUtil jwtUtil;
     
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<List<Comment>> getComments(@PathVariable Long postId) throws Exception {
+    public ResponseEntity<List<Comment>> getComments(@PathVariable(name = "postId") Long postId) throws Exception {
         List<Comment> comments = commentService.getCommentsByPostId(postId);
         return ResponseEntity.ok(comments);
     }
     
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<Map<String, Object>> createComment(
-            @PathVariable Long postId,
-            @Valid @RequestBody CommentRequest request,
-            HttpServletRequest httpRequest) {
+        @PathVariable(name = "postId") Long postId,
+        @Valid @RequestBody CommentRequest request) {
         
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             Comment comment = commentService.createComment(postId, userId, request);
             
             Map<String, Object> response = new HashMap<>();
@@ -65,12 +62,11 @@ public class CommentController {
     
     @PutMapping("/comments/{id}")
     public ResponseEntity<Map<String, Object>> updateComment(
-            @PathVariable Long id,
-            @Valid @RequestBody CommentRequest request,
-            HttpServletRequest httpRequest) {
+        @PathVariable(name = "id") Long id,
+        @Valid @RequestBody CommentRequest request) {
         
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             Comment comment = commentService.updateComment(id, userId, request);
             
             Map<String, Object> response = new HashMap<>();
@@ -88,12 +84,9 @@ public class CommentController {
     }
     
     @DeleteMapping("/comments/{id}")
-    public ResponseEntity<Map<String, Object>> deleteComment(
-            @PathVariable Long id,
-            HttpServletRequest httpRequest) {
-        
+    public ResponseEntity<Map<String, Object>> deleteComment(@PathVariable(name = "id") Long id) {
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             commentService.deleteComment(id, userId);
             
             Map<String, Object> response = new HashMap<>();
@@ -109,11 +102,11 @@ public class CommentController {
         }
     }
     
-    private Long getUserIdFromToken(HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-            return jwtUtil.getUserIdFromToken(token);
+    private Long getUserIdFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserPrincipal) {
+            CustomUserPrincipal userPrincipal = (CustomUserPrincipal) authentication.getPrincipal();
+            return userPrincipal.getUserId();
         }
         throw new RuntimeException("인증이 필요합니다.");
     }

@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuthState();
-  }, [checkAuthState]);
+  }, []); // checkAuthState 의존성 배열에서 logout 제거
 
   const checkAuthState = useCallback(async () => {
     try {
@@ -38,24 +38,40 @@ export const AuthProvider = ({ children }) => {
     }
   }, [logout]);
 
-  const login = async (credentials) => {
-    try {
-      const response = await ApiService.login(credentials);
-      if (response.success) {
-        const userData = await ApiService.getCurrentUser();
-        setUser(userData);
+const login = async (credentials) => {
+  try {
+    const response = await ApiService.login(credentials);
+    if (response.success && response.token) {
+      await AsyncStorage.setItem('accessToken', response.token);
+      try {
+        const currentUser = await ApiService.getCurrentUser();
+        setUser(currentUser);
         setIsAuthenticated(true);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
+        await AsyncStorage.setItem('user', JSON.stringify(currentUser));
+      } catch (e) {
+        // getCurrentUser가 실패해도 최소한 username 정보라도 저장
+        const fallbackUser = { username: credentials.username };
+        setUser(fallbackUser);
+        setIsAuthenticated(true);
+        await AsyncStorage.setItem('user', JSON.stringify(fallbackUser));
       }
-      return { success: false, message: response.message };
-    } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || '로그인에 실패했습니다.' 
-      };
+      return { success: true, token: response.token };
     }
-  };
+    return { success: false, message: response.message };
+  } catch (error) {
+    if (error.response && error.response.data) {
+      return error.response.data;
+    }
+    return {
+      success: false,
+      message: error.message || '로그인에 실패했습니다.',
+    };
+  }
+};
+
+
+
+
 
   const register = async (userData) => {
     try {
@@ -84,6 +100,7 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       isAuthenticated,
+      setIsAuthenticated,
       login,
       register,
       logout,

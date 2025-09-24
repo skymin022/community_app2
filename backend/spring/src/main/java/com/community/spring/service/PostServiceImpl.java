@@ -30,7 +30,7 @@ public class PostServiceImpl implements PostService {
                 .build();
         
         postMapper.insertPost(post);
-        return post;
+        return postMapper.findById(post.getId());  // 생성된 게시글 정보 반환
     }
     
     @Override
@@ -41,9 +41,9 @@ public class PostServiceImpl implements PostService {
     }
     
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Post getPostById(Long id) throws Exception {
-        // 조회수 증가
+        // 조회수 증가를 별도 트랜잭션으로 처리
         postMapper.incrementViewCount(id);
         return postMapper.findById(id);
     }

@@ -44,4 +44,38 @@
         UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
     </update>
     
+    <!-- 게시글 수 -->
+    <select id="countPostsByUserId" resultType="long">
+        SELECT COUNT(*) FROM posts WHERE user_id = #{userId} AND is_deleted = FALSE
+    </select>
+
+    <!-- 댓글 수 -->
+    <select id="countCommentsByUserId" resultType="long">
+        SELECT COUNT(*) FROM comments WHERE user_id = #{userId} AND is_deleted = FALSE
+    </select>
+
+    <!-- 프로필 이미지 업데이트 -->
+    <update id="updateProfileImage">
+        UPDATE users SET profile_image_url = #{profileImageUrl}, updated_at = CURRENT_TIMESTAMP
+        WHERE username = #{username}
+    </update>
+
+    <!-- 내 게시글 목록 -->
+    <select id="findPostsByUserId" resultMap="com.community.spring.mapper.PostMapper.PostResultMap">
+        SELECT p.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = #{userId} AND p.is_deleted = FALSE
+        ORDER BY p.created_at DESC
+    </select>
+
+    <!-- 내 댓글 목록 -->
+    <select id="findCommentsByUserId" resultMap="com.community.spring.mapper.CommentMapper.CommentResultMap">
+        SELECT c.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.user_id = #{userId} AND c.is_deleted = FALSE
+        ORDER BY c.created_at DESC
+    </select>
+
 </mapper>

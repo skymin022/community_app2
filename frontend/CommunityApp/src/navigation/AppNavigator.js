@@ -15,7 +15,13 @@ import PostListScreen from '../screens/post/PostListScreen';
 import PostDetailScreen from '../screens/post/PostDetailScreen';
 import CreatePostScreen from '../screens/post/CreatePostScreen';
 import EditPostScreen from '../screens/post/EditPostScreen';
+
+// Profile 관련 Screens
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import MyPostScreen from '../screens/profile/MyPostScreen';
+import MyCommentScreen from '../screens/profile/MyCommentScreen';
+import SettingScreen from '../screens/profile/SettingScreen';
+import HelpScreen from '../screens/profile/HelpScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,18 +51,28 @@ const PostStackNavigator = () => (
   </Stack.Navigator>
 );
 
+
+const ProfileStackNavigator = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: '프로필', headerShown: false }} />
+    <Stack.Screen name="MyPost" component={MyPostScreen} options={{ title: '내 게시글' }} />
+    <Stack.Screen name="MyComment" component={MyCommentScreen} options={{ title: '내 댓글' }} />
+    <Stack.Screen name="Setting" component={SettingScreen} options={{ title: '설정' }} />
+    <Stack.Screen name="Help" component={HelpScreen} options={{ title: '도움말' }} />
+    <Stack.Screen name="PostDetail" component={PostDetailScreen} options={{ title: '게시글 상세' }} />
+  </Stack.Navigator>
+);
+
 const MainTabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ color, size }) => {
         let iconName;
-        
         if (route.name === 'Posts') {
           iconName = 'article';
         } else if (route.name === 'Profile') {
           iconName = 'person';
         }
-        
         return <Icon name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: '#2196F3',
@@ -70,8 +86,8 @@ const MainTabNavigator = () => (
     />
     <Tab.Screen 
       name="Profile" 
-      component={ProfileScreen}
-      options={{ title: '프로필' }}
+      component={ProfileStackNavigator}
+      options={{ title: '프로필', headerShown: false }}
     />
   </Tab.Navigator>
 );

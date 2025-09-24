@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,37 +13,35 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 
 import com.community.spring.domain.Post;
 import com.community.spring.dto.PostRequest;
 import com.community.spring.service.PostService;
-import com.community.spring.util.JwtUtil;
+import com.community.spring.util.JwtAuthenticationFilter.CustomUserPrincipal;
 import com.github.pagehelper.PageInfo;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class PostController {
     
     private final PostService postService;
-    private final JwtUtil jwtUtil;
     
     @GetMapping
     public ResponseEntity<PageInfo<Post>> getPosts(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) throws Exception {
-        
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) throws Exception {
         PageInfo<Post> posts = postService.getPosts(page, size);
         return ResponseEntity.ok(posts);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPost(@PathVariable Long id) {
+    public ResponseEntity<Post> getPost(@PathVariable(name = "id") Long id) {
         try {
             Post post = postService.getPostById(id);
             return ResponseEntity.ok(post);
@@ -54,12 +51,9 @@ public class PostController {
     }
     
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createPost(
-            @Valid @RequestBody PostRequest request,
-            HttpServletRequest httpRequest) {
-        
+    public ResponseEntity<Map<String, Object>> createPost(@Valid @RequestBody PostRequest request) {
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             Post post = postService.createPost(userId, request);
             
             Map<String, Object> response = new HashMap<>();
@@ -78,12 +72,11 @@ public class PostController {
     
     @PutMapping("/{id}")
     public ResponseEntity<Map<String, Object>> updatePost(
-            @PathVariable Long id,
-            @Valid @RequestBody PostRequest request,
-            HttpServletRequest httpRequest) {
+        @PathVariable(name = "id") Long id,
+        @Valid @RequestBody PostRequest request) {
         
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             Post post = postService.updatePost(id, userId, request);
             
             Map<String, Object> response = new HashMap<>();
@@ -101,12 +94,9 @@ public class PostController {
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deletePost(
-            @PathVariable Long id,
-            HttpServletRequest httpRequest) {
-        
+    public ResponseEntity<Map<String, Object>> deletePost(@PathVariable(name = "id") Long id) {
         try {
-            Long userId = getUserIdFromToken(httpRequest);
+            Long userId = getUserIdFromSecurityContext();
             postService.deletePost(id, userId);
             
             Map<String, Object> response = new HashMap<>();
@@ -122,11 +112,11 @@ public class PostController {
         }
     }
     
-    private Long getUserIdFromToken(HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        if (token != null && token.startsWith("Bearer ")) {
-            token = token.substring(7);
-            return jwtUtil.getUserIdFromToken(token);
+    private Long getUserIdFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserPrincipal) {
+            CustomUserPrincipal userPrincipal = (CustomUserPrincipal) authentication.getPrincipal();
+            return userPrincipal.getUserId();
         }
         throw new RuntimeException("인증이 필요합니다.");
     }
