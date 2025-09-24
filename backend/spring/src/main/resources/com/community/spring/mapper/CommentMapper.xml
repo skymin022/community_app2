@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.community.spring.mapper.CommentMapper">
+    
+    <resultMap id="CommentResultMap" type="com.community.spring.domain.Comment">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="content" column="content"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="userNickname" column="user_nickname"/>
+        <result property="userProfileImageUrl" column="user_profile_image_url"/>
+    </resultMap>
+    
+    <insert id="insertComment" parameterType="com.community.spring.domain.Comment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comments (post_id, user_id, content, parent_id, is_deleted)
+        VALUES (#{postId}, #{userId}, #{content}, #{parentId}, #{isDeleted})
+    </insert>
+    
+    <select id="findByPostId" resultMap="CommentResultMap">
+        SELECT c.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.post_id = #{postId} AND c.is_deleted = FALSE
+        ORDER BY c.parent_id ASC, c.created_at ASC
+    </select>
+    
+    <select id="findById" resultMap="CommentResultMap">
+        SELECT c.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM comments c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.id = #{id} AND c.is_deleted = FALSE
+    </select>
+    
+    <update id="updateComment" parameterType="com.community.spring.domain.Comment">
+        UPDATE comments SET
+            content = #{content},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deleteComment">
+        UPDATE comments SET is_deleted = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+    
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.community.spring.mapper.PostMapper">
+    
+    <resultMap id="PostResultMap" type="com.community.spring.domain.Post">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="userNickname" column="user_nickname"/>
+        <result property="userProfileImageUrl" column="user_profile_image_url"/>
+    </resultMap>
+    
+    <insert id="insertPost" parameterType="com.community.spring.domain.Post" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO posts (user_id, title, content, image_url, view_count, is_deleted)
+        VALUES (#{userId}, #{title}, #{content}, #{imageUrl}, #{viewCount}, #{isDeleted})
+    </insert>
+    
+    <select id="findAllPosts" resultMap="PostResultMap">
+        SELECT p.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.is_deleted = FALSE
+        ORDER BY p.created_at DESC
+    </select>
+    
+    <select id="findById" resultMap="PostResultMap">
+        SELECT p.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.id = #{id} AND p.is_deleted = FALSE
+    </select>
+    
+    <select id="findByUserId" resultMap="PostResultMap">
+        SELECT p.*, u.nickname as user_nickname, u.profile_image_url as user_profile_image_url
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.user_id = #{userId} AND p.is_deleted = FALSE
+        ORDER BY p.created_at DESC
+    </select>
+    
+    <update id="updatePost" parameterType="com.community.spring.domain.Post">
+        UPDATE posts SET
+            title = #{title},
+            content = #{content},
+            image_url = #{imageUrl},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deletePost">
+        UPDATE posts SET is_deleted = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+    
+    <update id="incrementViewCount">
+        UPDATE posts SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+    
+</mapper>
