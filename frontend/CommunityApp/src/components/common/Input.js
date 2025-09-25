@@ -13,21 +13,27 @@ const Input = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  // 안전하게 문자열로 변환
+  const safeLabel = label == null ? '' : String(label);
+  const safeError = error == null ? '' : String(error);
+  const safeValue = props.value == null ? '' : String(props.value);
+
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {safeLabel !== '' && <Text style={styles.label}>{safeLabel}</Text>}
       <View style={styles.inputContainer}>
         <TextInput
           style={[
             styles.input,
             multiline && styles.multilineInput,
             isFocused && styles.focused,
-            error && styles.error,
+            safeError !== '' && styles.error,
           ]}
           secureTextEntry={secureTextEntry && !showPassword}
           multiline={multiline}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          value={safeValue}
           {...props}
         />
         {secureTextEntry && (
@@ -35,27 +41,21 @@ const Input = ({
             style={styles.eyeIcon}
             onPress={() => setShowPassword(!showPassword)}
           >
-            <Icon 
-              name={showPassword ? 'visibility' : 'visibility-off'} 
-              size={24} 
-              color="#666" 
+            <Icon
+              name={showPassword ? 'visibility' : 'visibility-off'}
+              size={24}
+              color="#666"
             />
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {safeError !== '' && <Text style={styles.errorText}>{safeError}</Text>}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   inputContainer: {

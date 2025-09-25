@@ -20,12 +20,15 @@ import Button from '../../components/common/Button';
 import { uploadImageToFirebase } from '../../utils/firebase';
 
 const EditPostScreen = ({ route, navigation }) => {
-  const { post } = route.params;
-  
+  const { post = {} } = route.params || {};
+  const safeTitle = typeof post.title === 'string' ? post.title : '';
+  const safeContent = typeof post.content === 'string' ? post.content : '';
+  const safeImageUrl = typeof post.imageUrl === 'string' ? post.imageUrl : '';
+
   const [formData, setFormData] = useState({
-    title: post.title || '',
-    content: post.content || '',
-    imageUrl: post.imageUrl || '',
+    title: safeTitle,
+    content: safeContent,
+    imageUrl: safeImageUrl,
   });
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
