@@ -1,67 +1,30 @@
 // firebaseStorage.js
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { initializeApp, getApps } from 'firebase/app';
-import RNFetchBlob from 'rn-fetch-blob';
+import storage from '@react-native-firebase/storage';
+import { Platform } from 'react-native';
 
-// Firebase Web App 설정 (Firebase 콘솔 > 프로젝트 설정)
-// const firebaseConfig = {
-//   apiKey: "AIzaSyCSwLVkPvPEfIuTrIqGlbn_ncQyp5R2S5g",
-//   authDomain: "communityapp-49872.firebaseapp.com",
-//   projectId: "communityapp-49872",
-//   storageBucket: "communityapp-49872.firebasestorage.app",
-//   messagingSenderId: "YOUR_SENDER_ID",
-//   appId: "1:852443453086:android:2a8f403dcdb2e486d50d8f",
-// };
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCSwLVkPvPEfIuTrIqGlbn_ncQyp5R2S5g",
-  authDomain: "communityapp-49872.firebaseapp.com",
-  databaseURL: "https://communityapp-49872.firebaseio.com",
-  projectId: "communityapp-49872",
-  storageBucket: "communityapp-49872.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "1:852443453086:android:2a8f403dcdb2e486d50d8f",
-};
-
-
-// 앱이 초기화 되어있지 않으면 초기화 수행
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-
-// Storage 인스턴스 생성
-const storage = getStorage(app);
+// 이미지 파일을 Firebase Storage에 업로드하는 함수
 export const uploadImageToFirebase = async (imageAsset) => {
   try {
     const fileName = `images/${Date.now()}_${imageAsset.fileName || 'image.jpg'}`;
-    const storageRef = ref(storage, fileName);
+    let filePath = imageAsset.uri;
 
-    let uri = imageAsset.uri;
-
-    if (Platform.OS === 'android' && uri.startsWith('content://')) {
-      const stat = await RNFetchBlob.fs.stat(uri);
-      uri = stat.path;
+    // Android content:// URI는 file 경로로 변환 필요 (react-native-get-real-path 등 활용 가능)
+    if (Platform.OS === 'android' && filePath.startsWith('content://')) {
+      throw new Error('content:// URI는 file 경로로 변환 필요. react-native-get-real-path 등 사용하세요.');
     }
 
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    // file:// prefix 제거
+    if (filePath.startsWith('file://')) {
+      filePath = filePath.replace('file://', '');
+    }
 
-    await uploadBytes(storageRef, blob);
-
-    const downloadURL = await getDownloadURL(storageRef);
+    // Storage에 파일 업로드
+    const reference = storage().ref(fileName);
+    await reference.putFile(filePath);
+    const downloadURL = await reference.getDownloadURL();
     return downloadURL;
   } catch (error) {
-  console.error('Firebase upload error:', error);
-  if (error.code) console.error('Error code:', error.code);
-  if (error.message) console.error('Error message:', error.message);
-  if (error.customData) console.error('Custom data:', error.customData);
-  if (error.serverResponse) {
-    try {
-      const parsed = JSON.parse(error.serverResponse);
-      console.error('Server response:', parsed);
-    } catch {
-      console.error('Server response (raw):', error.serverResponse);
-    }
+    console.error('Firebase upload error:', error);
+    throw error;
   }
-  throw error;
-}
-
 };
